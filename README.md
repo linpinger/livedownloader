@@ -26,6 +26,12 @@
   - 如果该地址为空，调用 `GetVipAudioInfo(4256765)` 获取播放地址，这里就会用到解密函数来获取文件名，下载地址等
   - 然后调用wget来下载m4a/mp3，其他代码就是GUI相关
 
+- 依赖: `wget.exe` `JSON_Class.ahk`
+
+## 2mp4.ahk
+
+- 功能: 调用 `ffmpeg` 或 `mkvtoolnix` 将flv合并或转为mp4，或提取音频，不涉及转码，只更换容器，所以速度快
+- 依赖: `ffmpeg.exe` `mkvtoolnix`中的`mkvmerge`
 
 **更新日志:**
 - 2020-08-10: 添加: ximalaya.ahk 下载喜马拉雅专辑
