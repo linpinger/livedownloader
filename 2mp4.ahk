@@ -205,10 +205,3 @@ getWHStr(VideoPath="") {
 	return wh
 }
 
-General_getWDir() { ; 如果存在内存盘，就返回它，否则为工作目录
-	DriveGet, DriveStr, List
-	if InStr(DriveStr, "T")
-		return "T:\"
-	else
-		return A_WorkingDir
-}
