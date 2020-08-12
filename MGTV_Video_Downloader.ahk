@@ -1,62 +1,118 @@
 ; 用途: 萌萌哒 @ 2020-08-12
+	verDate := "2020-08-12"
 
-	Arg1 = %1%
-
-bDebug := false
-
+	bDebug := false
 	wDir := General_getWDir() ; T:\, A_WorkingDir
 	SetWorkingDir, %wDir%
 
+DefCIDList=
+(join|
+338497_乘风破浪的姐姐
+338575_婆婆和妈妈
+338481_妻子的浪漫旅行
+337284_向往的生活
+)
+
 	refURL  := "https://www.mgtv.com/"
 
-	if ( "GUI" = Arg1 ) {
-		InputBox, PageURL, URL, 输入播放地址的URL, , , , , , , , %Clipboard%
-		video_id := ""
-		if ( InStr(PageURL, ".mgtv.com/b/") and InStr(PageURL, ".html") ) {
-			RegExMatch(PageURL, "Ui)mgtv.com/b/[0-9]+/([0-9]+)\.html", vid_)
-			video_id := vid_1, vid_1 := ""
-		}
-
-		if ( "" != video_id )
-			gosub, Stage1_VideoID2PM
-		ExitApp
-	}
-
-	TrayTip, 热键:, F1: URL2bat
+	gosub, MenuInit
+	gosub, GuiInit
 return
 
-copyURL2Clip:
-	IfWinExist, ahk_class MozillaWindowClass
-	{	; 复制当前网址
-		WinActivate, ahk_class MozillaWindowClass
-		WinWaitActive, ahk_class MozillaWindowClass
-		Clipboard =
-		send !d
-		sleep 500
-		send ^c
-		ClipWait
+GuiInit:
+	Gui, Add, GroupBox, x12 y10 w800 h50 cBlue, Album | Month | CID | VID
+	Gui, Add, ComboBox, x22 y30 w270 h20 R9 vCIDList choose1, %DefCIDList%
+	Gui, Add, ComboBox, x302 y30 w118 h20 R20 vMonthList choose1, %A_YYYY%%A_MM%
+	Gui, Add, Edit, x442 y30 w110 h20 vCID
+	Gui, Add, Edit, x572 y30 w110 h20 vVideo_ID
+
+	Gui, Add, ListView, x12 y70 w800 h300 vFoxLV gClickLV, VID|Title2|Time|Title3|VIP
+		LV_ModifyCol(1, 70), LV_ModifyCol(2, 100), LV_ModifyCol(3, 50), LV_ModifyCol(4, 500), LV_ModifyCol(5, 40)
+	; Generated using SmartGUI Creator 4.0
+	Gui, Show, h380 w825, MGTV   Ver: %verDate%
+Return
+
+getFirstList:
+	GuiControlGet, MonthList
+	GuiControlGet, CIDList
+	StringSplit, CCID_, CIDList, _, %A_Space%  ; 338497_乘风破浪的姐姐
+	CID := CCID_1
+	GuiControl, text, CID, %CID%
+
+;			https://pcweb.api.mgtv.com/list/master?_support=10000000&filterpre=true&vid=&cid=338481&pn=1&ps=60&month=202006&&callback=jsonp_1597213967080_49296
+	url := "https://pcweb.api.mgtv.com/list/master?cid=" . cid
+	if ( "" != MonthList )
+		url .= "&filterpre=true&pn=1&ps=60&month=" . MonthList
+
+	fName := "mgtv_list_" . cid . ".json"
+	IfNotExist, %fName%
+		runwait, wget -t 3 -T 5 -O %fName% "%url%", , min
+	FileRead, jsonStr, *P65001 %fName%
+	if ( ! bDebug )
+		FileDelete, %fName%
+	j := JSON.parse(jsonStr)
+
+	; 各季
+	loop, % j.data.tab_y.MaxIndex()
+	{
+		nowCID := j.data.tab_y[A_index].id
+		if ( nowCID != CID )
+			GuiControl, , CIDList, % nowCID . "_" . j.data.tab_y[A_index].t . " @ " . CCID_2
 	}
 
-	video_id := ""
-	; https://www.mgtv.com/b/338481/8278568.html
-	; video_id := "8278568"
+	; 各月
+	GuiControl, , MonthList, |
+	loop, % j.data.tab_m.MaxIndex()
+		GuiControl, , MonthList, % j.data.tab_m[A_index].m
+;	GuiControl, Choose, MonthList, 1
+
+	; 各集
+	for i, v in j.data.list
+		LV_Add("", v.video_id, v.t2, v.time, v.t3, v.isvip)
+	if ( "" != MonthList )
+		LV_Add("", "", MonthList, "", "-- 以上是 " MonthList " 的内容 --")
+	else
+		LV_Add()
+return
+
+
+copyURL2Clip:
+	if ( ! InStr(Clipboard, ".mgtv.com/b/") ) {
+		IfWinExist, ahk_class MozillaWindowClass
+		{	; 复制当前网址
+			WinActivate, ahk_class MozillaWindowClass
+			WinWaitActive, ahk_class MozillaWindowClass
+			Clipboard =
+			send !d
+			sleep 500
+			send ^c
+			ClipWait
+		}
+		gosub, ClipURL2VID
+	}
+return
+
+ClipURL2VID:
+	video_id := "" ; https://www.mgtv.com/b/338481/8278568.html ; video_id := "8278568"
 
 	if ( InStr(Clipboard, ".mgtv.com/b/") and InStr(Clipboard, ".html") ) {
 		RegExMatch(Clipboard, "Ui)mgtv.com/b/[0-9]+/([0-9]+)\.html", vid_)
 		video_id := vid_1, vid_1 := ""
 	}
 
-	if ( "" != video_id )
+	if ( "" != video_id ) {
+		GuiControl, text, video_id, %video_id%
 		gosub, Stage1_VideoID2PM
+	}
 return
-
 
 Stage1_VideoID2PM: ; 输入:video_id，输出: PM_CHKID, PM2, video_id
 ;	video_id := "9430799"
-	jsonpName := "jsonp_" . General_getUnixTime() . "000_23333"
 	TK2 := getTK2()
 
-	runwait, wget --save-headers -t 3 -T 5 -O mgtv_video.json "https://pcweb.api.mgtv.com/player/video?video_id=%video_id%&type=pch5&_support=10000000&auth_mode=1&callback=%jsonpName%&tk2=%TK2%", , min
+;	jsonpName := "jsonp_" . General_getUnixTime() . "000_23333"
+;	runwait, wget --save-headers -t 3 -T 5 -O mgtv_video.json "https://pcweb.api.mgtv.com/player/video?video_id=%video_id%&type=pch5&_support=10000000&auth_mode=1&callback=%jsonpName%&tk2=%TK2%", , min
+	runwait, wget --save-headers -t 3 -T 5 -O mgtv_video.json "https://pcweb.api.mgtv.com/player/video?video_id=%video_id%&type=pch5&_support=10000000&auth_mode=1&tk2=%TK2%", , min
 	FileRead, httpStr, *P65001 mgtv_video.json
 	if ( ! bDebug )
 		FileDelete, mgtv_video.json
@@ -71,17 +127,18 @@ Stage1_VideoID2PM: ; 输入:video_id，输出: PM_CHKID, PM2, video_id
 return
 
 Stage2_getSource: ; 输入: PM_CHKID, PM2, video_id   输出: M3U8URL
-	jsonpName := "jsonp_" . General_getUnixTime() . "000_23333"
-	runwait, wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?pm2=%PM2%&video_id=%video_id%&type=pch5&callback=%jsonpName%" --header="Cookie: PM_CHKID=%PM_CHKID%", , min
+;	jsonpName := "jsonp_" . General_getUnixTime() . "000_23333"
+;	runwait, wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?pm2=%PM2%&video_id=%video_id%&type=pch5&callback=%jsonpName%" --header="Cookie: PM_CHKID=%PM_CHKID%", , min
+	runwait, wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?pm2=%PM2%&video_id=%video_id%&type=pch5" --header="Cookie: PM_CHKID=%PM_CHKID%", , min
 	FileRead, jsonStr, *P65001 mg_1.json
 	if ( ! bDebug )
 		FileDelete, mg_1.json
 	if ( "" = jsonStr )
 		msgbox, % "空json: mg1"
 
-	staPos := InStr(jsonStr, "{")
-	endPos := InStr(jsonStr, "}", fase, 0)
-	jsonStr := SubStr(jsonStr, staPos, endPos - staPos + 1)
+;	staPos := InStr(jsonStr, "{")
+;	endPos := InStr(jsonStr, "}", fase, 0)
+;	jsonStr := SubStr(jsonStr, staPos, endPos - staPos + 1)
 	j := JSON.parse(jsonStr)
 	jURL2 := ""
 	uHead := j.data.stream_domain[1]
@@ -152,10 +209,59 @@ Stage4_ts2bat: ; in: m3u8Content, BaseURL
 	traytip, ok:, %wDir%\00.bat
 return
 
+ClickLV: ; 点击LV
+	nRow := A_EventInfo
+	if ( A_GuiEvent = "DoubleClick" ) {
+		LV_GetText(video_id, nRow, 1)
+		GuiControl, text, video_id, %video_id%
+		if ( "" != video_id )
+			gosub, Stage1_VideoID2PM
+	}
+return
+
+MenuInit:
+	Menu, MyMenuBar, Add, 清空LV(&C), MenuAct
+	Menu, MyMenuBar, Add, 　　　　　　　, MenuAct
+	Menu, MyMenuBar, Add, 获取列表(&S), MenuAct
+	Menu, MyMenuBar, Add, 　　　　　　　　, MenuAct
+	Menu, MyMenuBar, Add, 下载视频ID(&D), MenuAct
+	Menu, MyMenuBar, Add, 从剪贴板获取视频ID(&V), MenuAct
+	Menu, MyMenuBar, Add, 从FireFox获取视频ID(&F), MenuAct
+	Gui, Menu, MyMenuBar
+return
+
+MenuAct:
+	if ( "获取列表(&S)" = A_ThisMenuItem ) {
+		gosub, getFirstList
+	} else if ( "清空LV(&C)" = A_ThisMenuItem ) {
+		LV_Delete()
+	} else if ( "下载视频ID(&D)" = A_ThisMenuItem ) {
+		GuiControlGet, video_id
+		if ( "" != video_id )
+			gosub, Stage1_VideoID2PM
+	} else if ( "从剪贴板获取视频ID(&V)" = A_ThisMenuItem ) {
+		gosub, ClipURL2VID
+	} else if ( "从FireFox获取视频ID(&F)" = A_ThisMenuItem ) {
+		gosub, copyURL2Clip
+	} else if ( "xxxxxx" = A_ThisMenuItem ) {
+	}
+return
+
+GuiClose:
+GuiEscape:
+	ExitApp
+return
+
 ^esc::reload
 +esc::Edit
 !esc::ExitApp
-F1:: gosub, copyURL2Clip
+/*
+CopyInfo2Clip(Num=1) {
+	LV_GetText(NowVar, LV_GetNext(0), Num)
+	Clipboard = %NowVar%
+	TrayTip, 剪贴板:, %NowVar%
+}
+*/
 
 #Include <General>
 #Include <base64>
