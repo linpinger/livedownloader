@@ -263,6 +263,7 @@ GetIDX:
 	}
 return
 
+#Include <General>
 #Include <JSON_Class>
 
 purePath(iName) {
@@ -302,7 +303,7 @@ GetVipAudioInfo(trackId, cookieStr="") {
 	if ( "" != cookieStr ) {
 		AddArg := "--header=""Cookie: " . cookieStr . """"
 	}
-	ts := getUnixTime(A_now)
+	ts := General_getUnixTime()
 	url := "https://mpay.ximalaya.com/mobile/track/pay/" . trackId . "/" . ts . "?device=pc&isBackend=true&_=" . ts
 	fname := "vip.info_" . trackId . ".json"
 
@@ -485,25 +486,10 @@ CgFun(t, cgstr) {
 	return e
 }
 
-getUnixTime(nowTime="20140604170249") {
-    nowTime -= 19700101080000, s
-	return, nowTime
-}
-
-
-
 CopyInfo2Clip(Num=1) {
 	LV_GetText(NowVar, LV_GetNext(0), Num)
 	Clipboard = %NowVar%
 	TrayTip, 剪贴板:, %NowVar%
-}
-
-General_getWDir() { ; 如果存在内存盘，就返回它，否则为工作目录
-	DriveGet, DriveStr, List
-	if InStr(DriveStr, "T")
-		return "T:\"
-	else
-		return A_WorkingDir
 }
 
 /*

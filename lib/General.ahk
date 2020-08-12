@@ -1,6 +1,6 @@
 ; 分类: 通用函数
 ; 适用: 原版 L版
-; 日期: 2020-07-03
+; 日期: 2020-08-12
 
 General_getWDir() { ; 如果存在内存盘，就返回它，否则为工作目录
 	DriveGet, DriveStr, List
@@ -8,6 +8,11 @@ General_getWDir() { ; 如果存在内存盘，就返回它，否则为工作目录
 		return "T:\"
 	else
 		return A_WorkingDir
+}
+
+General_getUnixTime(nowTime="") { ; 返回unix时间戳，参数为空时，使用A_Now
+    nowTime -= 19700101080000, s
+	return, nowTime
 }
 
 ; {-- 网络
