@@ -1,5 +1,5 @@
 ; 用途: 萌萌哒 @ 2020-08-12
-	verDate := "2020-08-12"
+	verDate := "2020-08-22"
 
 	bDebug := false
 	wDir := General_getWDir() ; T:\, A_WorkingDir
@@ -8,8 +8,8 @@
 DefCIDList=
 (join|
 338497_乘风破浪的姐姐
-338575_婆婆和妈妈
 338481_妻子的浪漫旅行
+338575_婆婆和妈妈
 337284_向往的生活
 )
 
@@ -119,22 +119,28 @@ Stage1_VideoID2PM: ; 输入:video_id，输出: PM_CHKID, PM2, video_id
 
 	RegExMatch(httpStr, "smUi)PM_CHKID=([^ `;]+)`;", chkid_)
 	RegExMatch(httpStr, "smUi)""pm2"":""([^""]+)""", pmt_)
+	RegExMatch(httpStr, "smUi)""tk2"":""([^""]+)""", tk_)
 	PM_CHKID := chkid_1, chkid_1 := ""
 	PM2 := pmt_1, pmt_1 := ""
-	; 输出: PM_CHKID, PM2, video_id
+	TK2 := tk_1, tk_1 := ""
+	; 输出: PM_CHKID, PM2, video_id, TK2
 
+;	msgbox, % PM_CHKID "`n" PM2 "`n" video_id "`n" TK2
 	gosub, Stage2_getSource
 return
 
-Stage2_getSource: ; 输入: PM_CHKID, PM2, video_id   输出: M3U8URL
+Stage2_getSource: ; 输入: PM_CHKID, PM2, video_id, TK2   输出: M3U8URL
 ;	jsonpName := "jsonp_" . General_getUnixTime() . "000_23333"
-;	runwait, wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?pm2=%PM2%&video_id=%video_id%&type=pch5&callback=%jsonpName%" --header="Cookie: PM_CHKID=%PM_CHKID%", , min
-	runwait, wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?pm2=%PM2%&video_id=%video_id%&type=pch5" --header="Cookie: PM_CHKID=%PM_CHKID%", , min
+	runwait, wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?tk2=%TK2%&pm2=%PM2%&video_id=%video_id%&type=pch5" --header="Cookie: PM_CHKID=%PM_CHKID%", , min
 	FileRead, jsonStr, *P65001 mg_1.json
 	if ( ! bDebug )
 		FileDelete, mg_1.json
 	if ( "" = jsonStr )
 		msgbox, % "空json: mg1"
+	if ( InStr(jsonStr, "参数错误") ) {
+		clipboard = wget -O mg_1.json "https://pcweb.api.mgtv.com/player/getSource?tk2=%TK2%&pm2=%PM2%&video_id=%video_id%&type=pch5" --header="Cookie: PM_CHKID=%PM_CHKID%"
+		msgbox, 参数错误mg1
+	}
 
 ;	staPos := InStr(jsonStr, "{")
 ;	endPos := InStr(jsonStr, "}", fase, 0)
