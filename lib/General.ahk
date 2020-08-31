@@ -1,6 +1,6 @@
 ; 分类: 通用函数
 ; 适用: 原版 L版
-; 日期: 2020-08-12
+; 日期: 2020-08-24
 
 General_getWDir() { ; 如果存在内存盘，就返回它，否则为工作目录
 	DriveGet, DriveStr, List
@@ -13,6 +13,17 @@ General_getWDir() { ; 如果存在内存盘，就返回它，否则为工作目录
 General_getUnixTime(nowTime="") { ; 返回unix时间戳，参数为空时，使用A_Now
     nowTime -= 19700101080000, s
 	return, nowTime
+}
+
+General_unixTime2Date(iUnixTime="1598189170408") { ; ret: 20200823212610
+	if ( StrLen(iUnixTime) >= 10 ) {
+		iTime := SubStr(iUnixTime, 1, 10)
+	} else {
+		msgbox, 错误：输入时间不是unix时间戳`n%iUnixTime%
+	}
+	sTime := "19700101080000"
+	EnvAdd, sTime, %iTime%, s
+	return sTime
 }
 
 ; {-- 网络

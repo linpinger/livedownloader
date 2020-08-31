@@ -1,5 +1,5 @@
 ; 用途: 萌萌哒 @ 2020-08-06
-	verDate := "2020-08-10"
+	verDate := "2020-08-31"
 
 	bDebug := false
 	wDir := General_getWDir() ; T:\, A_WorkingDir
@@ -11,7 +11,7 @@
 		runWinStat := "hide"
 	}
 
-	NowAlbumURL := "https://www.ximalaya.com/renwen/3623979/"
+	NowAlbumURL := "https://www.ximalaya.com/renwenjp/3623979/"
 
 	; 选项
 	bAutoDownAllIDX := false ; 自动下载全部列表
@@ -286,8 +286,9 @@ GetAudioInfo(nowTrackID, CookieStr="") {
 	}
 	url := "https://www.ximalaya.com/revision/play/v1/audio?id=" . nowTrackID . "&ptype=1"
 	fname := "audio.info_" . nowTrackID . ".json"
+	xmSign := getXMSignHead()
 	IfNotExist, %fname%
-		runwait, wget -t 3 -T 5 -O %fname% -U "ting_6.3.60(sdk`,Android16)" "%url%" %AddArg%, , %runWinStat%
+		runwait, wget -t 3 -T 5 -O %fname% -U "ting_6.3.60(sdk`,Android16)" --header="%xmSign%" "%url%" %AddArg%, , %runWinStat%
 	FileRead, jsonStr, *P65001 %fname%
 	if ( ! bDebug )
 		FileDelete, %fname%
@@ -539,6 +540,13 @@ http://www.ting199.com/
 
 */
 
+getXMSignHead() {
+	nowUnixTime := General_getUnixTime()
+	subUnixTime := nowUnixTime - 50
+	nowUnixTime .= "555"
+	subUnixTime .= "333"
+	return "xm-sign: " . Hash_MD5("himalaya-" . nowUnixTime) . "(55)" . nowUnixTime . "(33)" . subUnixTime
+}
 
 /*
 readme.md @ 2020-08-10
@@ -550,5 +558,7 @@ readme.md @ 2020-08-10
   - 通过 `GetAudioInfo(4256765)` 获取json里面的data.src的播放地址
   - 如果该地址为空，调用 `GetVipAudioInfo(4256765)` 获取播放地址，这里就会用到解密函数来获取文件名，下载地址等
   - 然后调用wget来下载m4a/mp3，其他代码就是GUI相关
+
+2020-08-31: 普通音频加入了xm-sign头: cb29befa15962b007ffd0ec50a067242(42)1598851946660(73)1598851917169:规则: md5sum("himalaya-" . nowUnix) . "(ramdom([0-99]))" . nowUnix . "(ramdom([0-99]))" . ( nowUnix - xxs )，nowUnix值取自: window["XM_SERVER_CLOCK"]， https://www.ximalaya.com/revision/time
 
 */

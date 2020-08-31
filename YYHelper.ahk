@@ -1,6 +1,6 @@
 ; 用途: 萌萌哒 @ 2020-05-08
 #NoEnv
-	verDate := "2020-08-10"
+	verDate := "2020-08-25"
 
 	bDebug := false
 	bDeleteFile := false ; 删除临时文件
@@ -25,11 +25,11 @@ return
 
 
 GuiInit:
-	Gui, Add, ListView, x2 y10 w940 h350 vFoxLV gClickLV, NO.|Time|Title|Duration|M3U8
-		LV_ModifyCol(1, 30), LV_ModifyCol(2, 50), LV_ModifyCol(3, 200), LV_ModifyCol(4, 70), LV_ModifyCol(5, 540)
-	Gui, Add, Edit, x2 y370 w940 h80 vTSURL, AAA`nBBB`nCCC`nDDD`nEEE`n
+	Gui, Add, ListView, x2 y10 w1040 h350 vFoxLV gClickLV, NO.|Time|Title|Duration|M3U8
+		LV_ModifyCol(1, 30), LV_ModifyCol(2, 270), LV_ModifyCol(3, 120), LV_ModifyCol(4, 70), LV_ModifyCol(5, 500)
+	Gui, Add, Edit, x2 y370 w1040 h80 vTSURL, AAA`nBBB`nCCC`nDDD`nEEE`n
 	; Generated using SmartGUI Creator 4.0
-	Gui, Show, w950 h455, YY Helper Ver: %verDate%
+	Gui, Show, w1050 h455, YY Helper Ver: %verDate%
 Return
 
 ClickLV: ; 点击LV
@@ -42,12 +42,15 @@ return
 
 MenuInit:
 	Menu, MyMenuBar, Add, 馒头2, MenuAct
-	Menu, MyMenuBar, Add, 　　　　　　　　　　, MenuAct
+	Menu, MyMenuBar, Add, 　　　　　, MenuAct
 	Menu, MyMenuBar, Add, 限速字符串(&L), MenuAct
-	Menu, MyMenuBar, Add, 　　　　　　　　　　　, MenuAct
-	Menu, MyMenuBar, Add, 创建文件夹:昨天(&Y), MenuAct
-	Menu, MyMenuBar, Add, 　　　　　　　　　　　　, MenuAct
+	Menu, MyMenuBar, Add, 　　　　　　, MenuAct
 	Menu, MyMenuBar, Add, 复制Edit内容(&C), MenuAct
+	Menu, MyMenuBar, Add, 复制Edit第1行URL, MenuAct
+	Menu, MyMenuBar, Add, 复制Edit第2行URL, MenuAct
+	Menu, MyMenuBar, Add, 复制Edit第3行URL, MenuAct
+	Menu, MyMenuBar, Add, 复制Edit第4行URL, MenuAct
+	Menu, MyMenuBar, Add, 复制Edit第5行URL, MenuAct
 	Gui, Menu, MyMenuBar
 return
 
@@ -55,12 +58,6 @@ MenuAct:
 	if ( "馒头2" = A_ThisMenuItem ) {
 		TOCURL := TOCURL2
 		gosub, getURLFromTOC
-	} else if ( "创建文件夹:昨天(&Y)" = A_ThisMenuItem ) {
-		YesterDay += -1, D
-		FormatTime, yystd, %YesterDay%, yyyy-MM-dd_Y
-		wDir .= "\" . yystd
-		FileCreateDir, %wDir%
-		TrayTip, 工作目录:, %wDir%
 	} else if ( "限速字符串(&L)" = A_ThisMenuItem ) {
 		AddStr := "--limit-rate=600k"
 		Traytip, 提示:, 字符串: %AddStr%
@@ -68,8 +65,35 @@ MenuAct:
 		GuiControlGet, TSURL
 		Clipboard := TSURL
 		Traytip, 剪贴板:, %TSURL%
+	} else if ( "复制Edit第1行URL" = A_ThisMenuItem ) {
+		copyLineInEdit(1)
+	} else if ( "复制Edit第2行URL" = A_ThisMenuItem ) {
+		copyLineInEdit(2)
+	} else if ( "复制Edit第3行URL" = A_ThisMenuItem ) {
+		copyLineInEdit(3)
+	} else if ( "复制Edit第4行URL" = A_ThisMenuItem ) {
+		copyLineInEdit(4)
+	} else if ( "复制Edit第5行URL" = A_ThisMenuItem ) {
+		copyLineInEdit(5)
 	}
 return
+
+copyLineInEdit(rowNum=1) {
+	GuiControlGet, TSURL
+	line := 0
+	loop, parse, TSURL, `n, `r
+	{
+		if ( InStr(A_LoopField, "http") ) {
+			++line
+			if ( line = rowNum ) {
+				RegExMatch(A_LoopField, "Ui)""(http[^""]+)""", uu_)
+				Clipboard := uu_1
+				Traytip, 剪贴板:, %uu_1%
+				break
+			}
+		}
+	}
+}
 
 GuiClose:
 GuiEscape:
@@ -125,7 +149,9 @@ getURLFromTOC:
 	j := JSON.parse(sJSON)
 
 	for i, v in j.videoPage.result {
-		LV_Add("", i, v.beforeTime, v.title, v.duration, v.resUrl) ; NO.|Time|Title|Duration|M3U8
+		RegExMatch(v.resUrl, "Ui)_([0-9]{13})\.m3u8", unix_)
+		FormatTime, m3u8Time, % General_unixTime2Date(unix_1), yyyy-MM-dd HH:mm:ss
+		LV_Add("", i, m3u8Time " | " v.beforeTime " | " calYYDate(v.beforeTime), v.title, v.duration, v.resUrl) ; NO.|Time|Title|Duration|M3U8
 ;		msgbox, % i "`n" v.beforeTime "`n"  v.duration "`n" v.resUrl "`n" v.title
 	}
 	LV_Add()
@@ -136,13 +162,19 @@ return
 getURLfromM3U8:
 ;	msgbox, % M3U8URL
 
-	url_1 := ""
-	RegExMatch(M3U8URL, "Ui)_([0-9]{13})\.m3u8", url_)
-	m3u8Name := A_now . "_" . url_1 . ".m3u8"
-	runwait, wget -O %m3u8Name% -U %UAStr% %M3U8URL%, %wDir%, min
-	FileRead, mList, *P65001 %wDir%\%m3u8Name%
+	unix_1 := ""
+	RegExMatch(M3U8URL, "Ui)_([0-9]{13})\.m3u8", unix_)
+	m3u8Name := unix_1 . ".m3u8"
+	FormatTime, m3u8Date, % General_unixTime2Date(unix_1), yyyy-MM-dd
+	dirPath := wDir . "\" . m3u8Date . "_Y"
+	StringReplace, dirPath, dirPath, \\, \, A
+	FileCreateDir, %dirPath%
+
+	IfNotExist, %dirPath%\%m3u8Name%
+		runwait, wget -O %m3u8Name% -U %UAStr% %M3U8URL%, %dirPath%, min
+	FileRead, mList, *P65001 %dirPath%\%m3u8Name%
 	if ( bDeleteFile )
-		FileDelete, %wDir%\%m3u8Name%
+		FileDelete, %dirPath%\%m3u8Name%
 
 /*
 	clipboard =
@@ -178,10 +210,11 @@ getURLfromM3U8:
 			TSLastURL := A_LoopField
 		}
 	}
+
 	if ( "" != TSStartURL ) {
 		oStr .= "wget -c " . AddStr . " """ . getStoE(TSStartURL, TSLastURL) """`n`n"
 	}
-	FileAppend, %oStr%, %wDir%\yy.bat
+	FileAppend, %oStr%, %dirPath%\yy.bat
 	GuiControl, text, TSURL, %oStr%
 return
 
@@ -231,5 +264,19 @@ TS_Copy(TSPath, tPath, sPos=0, ePos=666, BufSize=4096) {  ; 从完整的ts中根据 s=0
 
 	tFile.Close()
 	sFile.Close()
+}
+
+calYYDate(dStr="7小时") {
+	nStr := A_now
+	if ( InStr(dStr, "小时") ) {
+		StringReplace, dStr, dStr, 小时, , A
+		EnvAdd, nStr, -%dStr%, Hours
+	}
+	if ( InStr(dStr, "天") ) {
+		StringReplace, dStr, dStr, 天, , A
+		EnvAdd, nStr, -%dStr%, Days
+	}
+	FormatTime, oStr, %nStr%, yyyy-MM-dd
+	return oStr
 }
 

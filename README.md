@@ -77,5 +77,6 @@
   - 双击本脚本，并按键盘F1键，会下载高清版的视频和音频，然后自动调用ffmpeg合并为mp4
 
 **更新日志:**
+- 2020-08-31: 普通音频加入了xm-sign头: cb29befa15962b007ffd0ec50a067242(42)1598851946660(73)1598851917169:规则: md5sum("himalaya-" . nowUnix) . "(ramdom([0-99]))" . nowUnix . "(ramdom([0-99]))" . ( nowUnix - xxs )，nowUnix值取自: window["XM_SERVER_CLOCK"]， https://www.ximalaya.com/revision/time
 - 2020-08-10: 第一次提交
 
